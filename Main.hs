@@ -6,13 +6,23 @@ import Data.List (foldl')
 import Data.Maybe (mapMaybe)
 import Text.Read (readMaybe)
 import System.CPUTime
-import Text.Printf (printf)
+import Text.Printf
+
+-- Type alias for elements in the Red-Black Tree
+type Element = Float
+
+-- Define Color type for Red-Black Tree nodes
 data Color = R | B deriving (Show, Eq)
-data RB a = E | T Color (RB a) a (RB a) deriving (Show, Eq)
+
+-- Define Red-Black Tree data structure
+data Tree a = E | T Color (Tree a) a (Tree a) deriving (Show, Eq)
+
+-- Type alias for the Red-Black Tree
+type RBTree = Tree Element
 
 -- Insert a value into the Red-Black Tree
 -- Time Complexity: O(log n)
-insert :: Ord a => a -> RB a -> RB a
+insert :: Ord a => a -> Tree a -> Tree a
 insert x s = T B a z b
   where
     T _ a z b = ins s
@@ -28,7 +38,7 @@ insert x s = T B a z b
 
 -- Membership test in the Red-Black Tree
 -- Time Complexity: O(log n)
-member :: Ord a => a -> RB a -> Bool
+member :: Ord a => a -> Tree a -> Bool
 member x E = False
 member x (T _ a y b)
   | x < y = member x a
@@ -37,7 +47,7 @@ member x (T _ a y b)
 
 -- Balance the Red-Black Tree
 -- Time Complexity: O(1)
-balance :: RB a -> a -> RB a -> RB a
+balance :: Tree a -> a -> Tree a -> Tree a
 balance (T R a x b) y (T R c z d) = T R (T B a x b) y (T B c z d)
 balance (T R (T R a x b) y c) z d = T R (T B a x b) y (T B c z d)
 balance (T R a x (T R b y c)) z d = T R (T B a x b) y (T B c z d)
@@ -47,7 +57,7 @@ balance a x b = T B a x b
 
 -- Delete a value from the Red-Black Tree
 -- Time Complexity: O(log n)
-delete :: Ord a => a -> RB a -> RB a
+delete :: Ord a => a -> Tree a -> Tree a
 delete x t =
   case del t of
     T _ a y b -> T B a y b
@@ -65,25 +75,25 @@ delete x t =
 
 -- Balancing functions
 -- Time Complexity: O(1) for each function
-balleft :: RB a -> a -> RB a -> RB a
+balleft :: Tree a -> a -> Tree a -> Tree a
 balleft (T R a x b) y c = T R (T B a x b) y c
 balleft bl x (T B a y b) = balance bl x (T R a y b)
 balleft bl x (T R (T B a y b) z c) = T R (T B bl x a) y (balance b z c)
 
-balright :: RB a -> a -> RB a -> RB a
+balright :: Tree a -> a -> Tree a -> Tree a
 balright a x (T R b y c) = T R a x (T B b y c)
 balright (T B a x b) y bl = balance (T R a x b) y bl
 balright (T R a x (T B b y c)) z bl = T R (balance (sub1 a) x b) y (T B c z bl)
 
 -- Convert a black tree to a red tree
 -- Time Complexity: O(1)
-sub1 :: RB a -> RB a
+sub1 :: Tree a -> Tree a
 sub1 (T B a x b) = T R a x b
 sub1 _ = error "invariance violation"
 
 -- Append two Red-Black Trees
 -- Time Complexity: O(log n)
-app :: RB a -> RB a -> RB a
+app :: Tree a -> Tree a -> Tree a
 app E x = x
 app x E = x
 app (T R a x b) (T R c y d) =
@@ -99,13 +109,13 @@ app (T R a x b) c = T R a x (app b c)
 
 -- Union of two Red-Black Trees
 -- Time Complexity: O(m log(n/m + 1))
-union :: Ord a => RB a -> RB a -> RB a
+union :: Ord a => Tree a -> Tree a -> Tree a
 union E t = t
 union (T _ a x b) t = union b (a `union` insert x t)
 
 -- Intersection of two Red-Black Trees
 -- Time Complexity: O(m log(n/m + 1))
-intersection :: Ord a => RB a -> RB a -> RB a
+intersection :: Ord a => Tree a -> Tree a -> Tree a
 intersection E _ = E
 intersection _ E = E
 intersection t1@(T _ a1 x1 b1) t2
@@ -114,7 +124,7 @@ intersection t1@(T _ a1 x1 b1) t2
 
 -- Difference of two Red-Black Trees
 -- Time Complexity: O(m log(n/m + 1))
-difference :: Ord a => RB a -> RB a -> RB a
+difference :: Ord a => Tree a -> Tree a -> Tree a
 difference E _ = E
 difference t E = t
 difference t1@(T _ a1 x1 b1) t2
@@ -123,12 +133,12 @@ difference t1@(T _ a1 x1 b1) t2
 
 -- Convert a list of floats to a Red-Black Tree
 -- Time Complexity: O(n log n) for inserting n elements
-listToRBTree :: [Float] -> RB Float
+listToRBTree :: [Element] -> RBTree
 listToRBTree = foldl' (flip insert) E
 
 -- Read matrix from file and convert to a list of floats
 -- Time Complexity: O(n) for reading n elements from file and parsing
-readMatrixFromFile :: FilePath -> IO [Float]
+readMatrixFromFile :: FilePath -> IO [Element]
 readMatrixFromFile filePath = do
   content <- readFile filePath
   let cleaned = filter (\c -> isDigit c || c == '.' || c == ',' || isSpace c) content
