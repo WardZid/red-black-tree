@@ -1,27 +1,21 @@
-module Main where
+{-# LANGUAGE FlexibleContexts #-}
 
 import System.IO (readFile)
-import Data.Char (isDigit, isSpace)
 import Data.List (foldl')
 import Data.Maybe (mapMaybe)
 import Text.Read (readMaybe)
-import System.CPUTime
-import Text.Printf
+import Control.Exception (evaluate, catch, SomeException)
+import Debug.Trace (trace)
 
--- Type alias for elements in the Red-Black Tree
 type Element = Float
 
--- Define Color type for Red-Black Tree nodes
 data Color = R | B deriving (Show, Eq)
 
--- Define Red-Black Tree data structure
 data Tree a = E | T Color (Tree a) a (Tree a) deriving (Show, Eq)
 
--- Type alias for the Red-Black Tree
 type RBTree = Tree Element
 
 -- Insert a value into the Red-Black Tree
--- Time Complexity: O(log n)
 insert :: Ord a => a -> Tree a -> Tree a
 insert x s = T B a z b
   where
@@ -37,7 +31,6 @@ insert x s = T B a z b
       | otherwise = s
 
 -- Membership test in the Red-Black Tree
--- Time Complexity: O(log n)
 member :: Ord a => a -> Tree a -> Bool
 member x E = False
 member x (T _ a y b)
@@ -46,7 +39,6 @@ member x (T _ a y b)
   | otherwise = True
 
 -- Balance the Red-Black Tree
--- Time Complexity: O(1)
 balance :: Tree a -> a -> Tree a -> Tree a
 balance (T R a x b) y (T R c z d) = T R (T B a x b) y (T B c z d)
 balance (T R (T R a x b) y c) z d = T R (T B a x b) y (T B c z d)
@@ -56,7 +48,6 @@ balance a x (T R (T R b y c) z d) = T R (T B a x b) y (T B c z d)
 balance a x b = T B a x b
 
 -- Delete a value from the Red-Black Tree
--- Time Complexity: O(log n)
 delete :: Ord a => a -> Tree a -> Tree a
 delete x t =
   case del t of
@@ -74,7 +65,6 @@ delete x t =
     delformRight a y b = T R a y (del b)
 
 -- Balancing functions
--- Time Complexity: O(1) for each function
 balleft :: Tree a -> a -> Tree a -> Tree a
 balleft (T R a x b) y c = T R (T B a x b) y c
 balleft bl x (T B a y b) = balance bl x (T R a y b)
@@ -85,14 +75,11 @@ balright a x (T R b y c) = T R a x (T B b y c)
 balright (T B a x b) y bl = balance (T R a x b) y bl
 balright (T R a x (T B b y c)) z bl = T R (balance (sub1 a) x b) y (T B c z bl)
 
--- Convert a black tree to a red tree
--- Time Complexity: O(1)
 sub1 :: Tree a -> Tree a
 sub1 (T B a x b) = T R a x b
 sub1 _ = error "invariance violation"
 
 -- Append two Red-Black Trees
--- Time Complexity: O(log n)
 app :: Tree a -> Tree a -> Tree a
 app E x = x
 app x E = x
@@ -107,81 +94,91 @@ app (T B a x b) (T B c y d) =
 app a (T R b x c) = T R (app a b) x c
 app (T R a x b) c = T R a x (app b c)
 
--- Union of two Red-Black Trees
--- Time Complexity: O(m log(n/m + 1))
-union :: Ord a => Tree a -> Tree a -> Tree a
-union E t = t
-union (T _ a x b) t = union b (a `union` insert x t)
-
--- Intersection of two Red-Black Trees
--- Time Complexity: O(m log(n/m + 1))
-intersection :: Ord a => Tree a -> Tree a -> Tree a
-intersection E _ = E
-intersection _ E = E
-intersection t1@(T _ a1 x1 b1) t2
-  | member x1 t2 = insert x1 (a1 `intersection` t2 `union` b1 `intersection` t2)
-  | otherwise = a1 `intersection` t2 `union` b1 `intersection` t2
-
--- Difference of two Red-Black Trees
--- Time Complexity: O(m log(n/m + 1))
-difference :: Ord a => Tree a -> Tree a -> Tree a
-difference E _ = E
-difference t E = t
-difference t1@(T _ a1 x1 b1) t2
-  | member x1 t2 = (a1 `union` b1) `difference` t2
-  | otherwise = insert x1 (a1 `difference` t2 `union` b1 `difference` t2)
+-- Merge two Red-Black Trees with debug prints
+merge :: Ord a => Tree a -> Tree a -> Tree a
+merge E x = x
+merge x E = x
+merge (T R a x b) (T R c y d) =
+  case merge b c of
+    T R b' z c' -> T R (T R a x b') z (T R c' y d)
+    bc -> T R a x (T R bc y d)
+merge (T B a x b) (T B c y d) =
+  case merge b c of
+    T R b' z c' -> T R (T B a x b') z (T B c' y d)
+    bc -> balleft a x (T B bc y d)
+merge a (T R b x c)           = T R (merge a b) x c
+merge (T R a x b) c           = T R a x (merge b c)
 
 -- Convert a list of floats to a Red-Black Tree
--- Time Complexity: O(n log n) for inserting n elements
 listToRBTree :: [Element] -> RBTree
 listToRBTree = foldl' (flip insert) E
 
 -- Read matrix from file and convert to a list of floats
--- Time Complexity: O(n) for reading n elements from file and parsing
-readMatrixFromFile :: FilePath -> IO [Element]
+readMatrixFromFile :: FilePath -> IO [[Element]]
 readMatrixFromFile filePath = do
   content <- readFile filePath
-  let cleaned = filter (\c -> isDigit c || c == '.' || c == ',' || isSpace c) content
-      numbers = mapMaybe (readMaybe . filter (`elem` ".0123456789")) (words cleaned) :: [Float]
-  return numbers
+  let rows = map (mapMaybe readMaybe . wordsWhen (== ',')) (lines content)
+  return rows
 
--- Time measurement utility
-time :: IO t -> IO t
-time a = do
-    start <- getCPUTime
-    v <- a
-    end <- getCPUTime
-    let diff = fromIntegral (end - start) / (10^12)
-    printf "Computation time: %0.3f sec\n" (diff :: Double)
-    return v
+-- Utility function to split a string by a delimiter
+wordsWhen :: (Char -> Bool) -> String -> [String]
+wordsWhen p s = case dropWhile p s of
+                  "" -> []
+                  s' -> w : wordsWhen p s''
+                        where (w, s'') = break p s'
+
+flatten :: Tree a -> [a]
+flatten E = []
+flatten (T _ l x r) = flatten l ++ [x] ++ flatten r
+
+-- Helper function to get the size of a tree
+treeSize :: Tree a -> Int
+treeSize E = 0
+treeSize (T _ l _ r) = 1 + treeSize l + treeSize r
 
 main :: IO ()
 main = do
   let filePath = "data_struct(1000x1000).txt"
   
   -- Read the file and parse the matrix
-  numbers <- readMatrixFromFile filePath
-  putStrLn "Building the tree..."
-  tree <- time $ return $ listToRBTree numbers
-  
-  -- Perform and print various operations
-  putStrLn "Red-Black Tree:"
-  print tree
-  
-  putStrLn "Member check for 5.0:"
-  time $ print $ member 5.0 tree
-  
-  putStrLn "Deleting 5.0:"
-  tree' <- time $ return $ delete 5.0 tree
-  print tree'
-  
-  let tree1 = listToRBTree [1.0, 2.0, 3.0]
-  let tree2 = listToRBTree [3.0, 4.0, 5.0]
-  putStrLn "Union of tree1 and tree2:"
-  time $ print $ tree1 `union` tree2
-  
-  putStrLn "Intersection of tree1 and tree2:"
-  time $ print $ tree1 `intersection` tree2
-  
-  putStrLn "Difference of tree1 and tree2:"
-  time $ print $ tree1 `difference` tree2
+  putStrLn "Reading and parsing the file..."
+  rows <- readMatrixFromFile filePath
+  putStrLn $ "Parsed " ++ show (length rows) ++ " rows."
+
+  -- Ensure rows are valid
+  putStrLn "Validating parsed rows..."
+  evaluate (length rows) >>= print
+
+  -- Create trees from each row
+  putStrLn "Creating trees from each row..."
+  let trees = map listToRBTree rows
+  putStrLn $ "Created " ++ show (length trees) ++ " trees."
+
+  -- Print first few trees for debugging
+  putStrLn "First few trees:"
+  mapM_ print (take 3 trees)
+
+  -- Merge all trees with intermediate results
+  putStrLn "Performing merge of all trees..."
+  let mergeWithDebug acc tree =
+        let result = merge acc tree
+        in trace ("Merge size: " ++ show (treeSize result)) result
+      allUnion = foldl' mergeWithDebug E trees
+  putStrLn "Merge of all trees completed."
+
+  -- Flatten the union tree
+  let unionList = flatten allUnion
+  putStrLn $ "Flattened union tree has " ++ show (length unionList) ++ " elements."
+
+  -- Print the first 10 elements of the union tree
+  putStrLn "First 10 elements of the union tree:"
+  let first10Elements = take 10 unionList
+  mapM_ print first10Elements
+
+  -- Ensure the union tree is flattened correctly
+  evaluate (length first10Elements) >>= print
+
+  -- Delete all elements from the unioned tree
+  putStrLn "Deleting all elements from the unioned tree..."
+  let _ = foldl' (flip delete) allUnion unionList
+  putStrLn "All elements deleted."
