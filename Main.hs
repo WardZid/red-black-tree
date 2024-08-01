@@ -5,7 +5,6 @@ import Data.List (foldl')
 import Data.Maybe (mapMaybe)
 import Text.Read (readMaybe)
 import Control.Exception (evaluate, catch, SomeException)
-import Debug.Trace (trace)
 
 type Element = Float
 
@@ -94,20 +93,54 @@ app (T B a x b) (T B c y d) =
 app a (T R b x c) = T R (app a b) x c
 app (T R a x b) c = T R a x (app b c)
 
--- Merge two Red-Black Trees with debug prints
+-- Optimized union of two Red-Black Trees
+optimizedUnion :: Ord a => Tree a -> Tree a -> Tree a
+optimizedUnion E t = t
+optimizedUnion t E = t
+optimizedUnion t1@(T c1 l1 x r1) t2@(T c2 l2 y r2)
+  | x < y = balanceL c1 l1 x (optimizedUnion r1 t2)
+  | x > y = balanceR (optimizedUnion t1 l2) y c2 r2
+  | otherwise = balanceB (optimizedUnion l1 l2) x (optimizedUnion r1 r2)
+
+-- Balancing functions adapted for union
+balanceL :: Color -> Tree a -> a -> Tree a -> Tree a
+balanceL B (T R (T R a x b) y c) z d = T R (T B a x b) y (T B c z d)
+balanceL B (T R a x (T R b y c)) z d = T R (T B a x b) y (T B c z d)
+balanceL c l x r = T c l x r
+
+balanceR :: Tree a -> a -> Color -> Tree a -> Tree a
+balanceR a x B (T R b y (T R c z d)) = T R (T B a x b) y (T B c z d)
+balanceR a x B (T R (T R b y c) z d) = T R (T B a x b) y (T B c z d)
+balanceR l x c r = T c l x r
+
+balanceB :: Tree a -> a -> Tree a -> Tree a
+balanceB = T B
+
+-- Intersection of two Red-Black Trees
+intersection :: Ord a => Tree a -> Tree a -> Tree a
+intersection E _ = E
+intersection _ E = E
+intersection t1@(T c1 l1 x r1) t2
+  | member x t2 = balance (intersection l1 t2) x (intersection r1 t2)
+  | otherwise = app (intersection l1 t2) (intersection r1 t2)
+
+-- Difference of two Red-Black Trees
+difference :: Ord a => Tree a -> Tree a -> Tree a
+difference t E = t
+difference E _ = E
+difference t1@(T c1 l1 x r1) t2@(T c2 l2 y r2)
+  | x < y = balanceL c1 (difference l1 t2) x r1
+  | x > y = balanceR l1 x c1 (difference r1 t2)
+  | otherwise = merge (difference l1 l2) (difference r1 r2)
+
+-- Merge two Red-Black Trees
 merge :: Ord a => Tree a -> Tree a -> Tree a
-merge E x = x
-merge x E = x
-merge (T R a x b) (T R c y d) =
-  case merge b c of
-    T R b' z c' -> T R (T R a x b') z (T R c' y d)
-    bc -> T R a x (T R bc y d)
-merge (T B a x b) (T B c y d) =
-  case merge b c of
-    T R b' z c' -> T R (T B a x b') z (T B c' y d)
-    bc -> balleft a x (T B bc y d)
-merge a (T R b x c)           = T R (merge a b) x c
-merge (T R a x b) c           = T R a x (merge b c)
+merge E t = t
+merge t E = t
+merge t1@(T c1 l1 x r1) t2@(T c2 l2 y r2)
+  | x < y = balanceL c1 l1 x (merge r1 t2)
+  | x > y = balanceR (merge t1 l2) y c2 r2
+  | otherwise = balanceB (merge l1 l2) x (merge r1 r2)
 
 -- Convert a list of floats to a Red-Black Tree
 listToRBTree :: [Element] -> RBTree
@@ -154,17 +187,29 @@ main = do
   let trees = map listToRBTree rows
   putStrLn $ "Created " ++ show (length trees) ++ " trees."
 
-  -- Print first few trees for debugging
-  putStrLn "First few trees:"
-  mapM_ print (take 3 trees)
+  -- Perform optimized union of all trees
+  putStrLn "Performing optimized union of all trees..."
+  let unionWithDebug acc tree =
+        let result = optimizedUnion acc tree
+        in result
+      allUnion = foldl' unionWithDebug E trees
+  putStrLn "Optimized union of all trees completed."
 
-  -- Merge all trees with intermediate results
-  putStrLn "Performing merge of all trees..."
-  let mergeWithDebug acc tree =
-        let result = merge acc tree
-        in trace ("Merge size: " ++ show (treeSize result)) result
-      allUnion = foldl' mergeWithDebug E trees
-  putStrLn "Merge of all trees completed."
+  -- Perform intersection of all trees
+  putStrLn "Performing intersection of all trees..."
+  let intersectionWithDebug acc tree =
+        let result = intersection acc tree
+        in result
+      allIntersection = foldl' intersectionWithDebug (head trees) (tail trees)
+  putStrLn "Intersection of all trees completed."
+
+  -- Perform difference of all trees
+  putStrLn "Performing difference of all trees..."
+  let differenceWithDebug acc tree =
+        let result = difference acc tree
+        in result
+      allDifference = foldl' differenceWithDebug (head trees) (tail trees)
+  putStrLn "Difference of all trees completed."
 
   -- Flatten the union tree
   let unionList = flatten allUnion
