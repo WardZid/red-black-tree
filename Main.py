@@ -24,7 +24,7 @@ class RedBlackTree:
         return self._search_tree_helper(node.right, key)
 
     def search(self, key):
-        print("search")
+        #print("search")
         return self._search_tree_helper(self.root, key) != self.TNULL
 
     def _balance_insert(self, k):
@@ -209,7 +209,7 @@ class RedBlackTree:
         y = None
         x = self.root
 
-        print("insert", key)
+#        print("insert", key)
         while x != self.TNULL:
             y = x
             if node.key < x.key:
@@ -283,6 +283,7 @@ if __name__ == "__main__":
                 tree.insert(number)
             trees.append(tree)
 
+    print("all insserted")
     # Perform union of all trees
     if trees:
         union_tree = trees[0]
