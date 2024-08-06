@@ -194,6 +194,110 @@ class RedBlackTree:
 
         self.root.color = black
 
+    def transplant(self, old_node, new_node):
+        if old_node.parent == self.NULL:
+            self.root = new_node
+        elif old_node == old_node.parent.left:
+            old_node.parent.left = new_node
+        else:
+            old_node.parent.right = new_node
+        new_node.parent = old_node.parent
+
+    def minimum(self, start_node):
+        if start_node == self.NULL:
+            return None
+
+        min_node = start_node
+        while min_node.left != self.NULL:
+            min_node = min_node.left
+        return min_node
+
+    def remove(self, key):
+        node_to_remove = self.search(key)
+
+        if node_to_remove is None or node_to_remove == self.NULL:
+            return False
+
+        if node_to_remove.left == self.NULL:
+            replacement_node = node_to_remove.right
+            self.transplant(node_to_remove, node_to_remove.right)
+        elif node_to_remove.right == self.NULL:
+            replacement_node = node_to_remove.left
+            self.transplant(node_to_remove, node_to_remove.left)
+        else:
+            min_right_node = self.minimum(node_to_remove.right)
+
+            replacement_node = min_right_node.right
+            self.transplant(min_right_node, min_right_node.right)
+            self.transplant(node_to_remove, min_right_node)
+
+            min_right_node.right = node_to_remove.right
+            node_to_remove.right.parent = min_right_node
+
+            min_right_node.left = node_to_remove.left
+            node_to_remove.left.parent = min_right_node
+
+            min_right_node.color = node_to_remove.color
+
+        black_depth_violated = (node_to_remove.color == black)
+        if black_depth_violated:
+            node_to_fix = replacement_node
+            while node_to_fix != self.root and node_to_fix.color == black:
+                is_left_child = (node_to_fix == node_to_fix.parent.left)
+                if is_left_child:
+                    sibling = node_to_fix.parent.right
+
+                    if sibling.color == red:
+                        sibling.color = black
+                        node_to_fix.parent.color = red
+                        self.left_rotate(node_to_fix.parent)
+                        sibling = node_to_fix.parent.right
+
+                    if sibling.left.color == black and sibling.right.color == black:
+                        sibling.color = red
+                        node_to_fix = node_to_fix.parent
+                    else:
+                        if sibling.right.color == black:
+                            sibling.left.color = black
+                            sibling.color = red
+                            self.right_rotate(sibling)
+                            sibling = node_to_fix.parent.right
+                        sibling.color = node_to_fix.parent.color
+                        node_to_fix.parent.color = black
+                        sibling.right.color = black
+                        self.left_rotate(node_to_fix.parent)
+                        node_to_fix = self.root
+                else:
+                    sibling = node_to_fix.parent.left
+
+                    if sibling.color == red:
+                        sibling.color = black
+                        node_to_fix.parent.color = red
+                        self.right_rotate(node_to_fix.parent)
+                        sibling = node_to_fix.parent.left
+
+                    if sibling.left.color == black and sibling.right.color == black:
+                        sibling.color = red
+                        node_to_fix = node_to_fix.parent
+                    else:
+                        if sibling.left.color == black:
+                            sibling.right.color = black
+                            sibling.color = red
+                            self.left_rotate(sibling)
+                            sibling = node_to_fix.parent.left
+                        sibling.color = node_to_fix.parent.color
+                        node_to_fix.parent.color = black
+                        sibling.left.color = black
+                        self.right_rotate(node_to_fix.parent)
+                        node_to_fix = self.root
+            node_to_fix.color = black
+        return True
+
+
+
+
+
+
 
 tree = RedBlackTree()
 tree.insert(4)
@@ -208,8 +312,25 @@ tree.insert(5)
 tree.insert(10)
 tree.insert(16)
 tree.insert(7)
-tree.insert(0)
 
 print(tree)
-result = tree.search(0)
+result = tree.search(10)
 print(result)
+
+
+if tree.remove(10):
+    print(tree)
+else:
+    print("value not found")
+
+
+if tree.remove(6):
+    print(tree)
+else:
+    print("value not found")
+
+
+if tree.remove(9):
+    print(tree)
+else:
+    print("value not found")
