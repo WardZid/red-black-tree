@@ -36,6 +36,7 @@ class RedBlackTree:
             print("Tree is empty")
             return
 
+        print("***********************************************START")
         queue = deque([(self.root, 0)])
         current_level = 0
         level_nodes = []
@@ -57,6 +58,8 @@ class RedBlackTree:
 
         if level_nodes:
             self.print_level(level_nodes, current_level)
+
+        print("***********************************************END")
 
     @staticmethod
     def print_level(nodes, level):
@@ -128,7 +131,7 @@ class RedBlackTree:
         if self.root == self.NULL:
             self.root = new_node
             self.root.color = black
-            return
+            return True
 
 
         current = self.root
@@ -141,8 +144,8 @@ class RedBlackTree:
             elif new_node.key > current.key:
                 current = current.right
             else:
-                print("duplicate keys not supported")
-                return
+                print("duplicates not supported")
+                return False
 
         # now current is NULL
 
@@ -193,6 +196,7 @@ class RedBlackTree:
                     self.left_rotate(node_to_balance.parent.parent)
 
         self.root.color = black
+        return True
 
     def transplant(self, old_node, new_node):
         if old_node.parent == self.NULL:
@@ -293,44 +297,82 @@ class RedBlackTree:
             node_to_fix.color = black
         return True
 
+    def inorder(self):
+        res = []
+        self._inorder_helper(self.root, res)
+        return res
+
+    def _inorder_helper(self, node, res):
+        if node != self.NULL:
+            self._inorder_helper(node.left, res)
+            res.append(node.key)
+            self._inorder_helper(node.right, res)
 
 
 
+class Group:
+    def __init__(self):
+        self.tree = RedBlackTree()
+        self.size = 0
+
+    def __str__(self):
+        self.tree.print_bfs()
+        return ""
+
+    def insert(self, value):
+        if self.tree.insert(value):
+            self.size += 1
+            print(f"Successfully Inserted {value}")
+        else:
+            print(f"Failed To Insert {value}")
+
+    def remove(self, value):
+        if self.tree.remove(value):
+            self.size -= 1
+            print(f"Successfully Removed {value}")
+        else:
+            print(f"Failed To Remove {value}")
+
+    def search(self, value):
+        return self.tree.search(value)
+
+    def values(self):
+        return self.tree.inorder()
 
 
 
-tree = RedBlackTree()
-tree.insert(4)
-tree.insert(12)
-tree.insert(9)
-tree.insert(2)
-tree.insert(6)
-tree.insert(45)
-tree.insert(8)
-tree.insert(15)
-tree.insert(5)
-tree.insert(10)
-tree.insert(16)
-tree.insert(7)
+group = Group()
+group.insert(4)
+group.insert(12)
+group.insert(9)
+group.insert(2)
+group.insert(6)
+group.insert(45)
+group.insert(8)
+group.insert(15)
+group.insert(5)
+group.insert(10)
+group.insert(16)
+group.insert(7)
 
-print(tree)
-result = tree.search(10)
+
+print(group.values())
+
+
+print(group)
+result = group.search(10)
 print(result)
 
 
-if tree.remove(10):
-    print(tree)
-else:
-    print("value not found")
+group.remove(10)
+print(group)
 
 
-if tree.remove(6):
-    print(tree)
-else:
-    print("value not found")
+group.remove(6)
+print(group)
 
 
-if tree.remove(9):
-    print(tree)
-else:
-    print("value not found")
+group.remove(9)
+print(group)
+
+
