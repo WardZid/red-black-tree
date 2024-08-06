@@ -44,7 +44,7 @@ class RedBlackTree:
         while queue:
             node, level = queue.popleft()
             if level > current_level:
-                self.print_level(level_nodes, current_level)
+                self._print_level(level_nodes, current_level)
                 level_nodes = []
                 current_level = level
 
@@ -57,23 +57,23 @@ class RedBlackTree:
                 queue.append((node.right, level + 1))
 
         if level_nodes:
-            self.print_level(level_nodes, current_level)
+            self._print_level(level_nodes, current_level)
 
         print("***********************************************END")
 
     @staticmethod
-    def print_level(nodes, level):
+    def _print_level(nodes, level):
         indent = " " * (2 ** (4 - level))
         print(indent + "   ".join([f"{key}:{color}" for key, color in nodes]))
         print(indent)
 
     def search(self, key):
-        search_result = self.search_helper(self.root, key)
+        search_result = self._search_helper(self.root, key)
         if search_result == self.NULL:
             return None
         return search_result
 
-    def search_helper(self, node, key):
+    def _search_helper(self, node, key):
         if node == self.NULL:
             return self.NULL
 
@@ -81,10 +81,10 @@ class RedBlackTree:
             return node
 
         if key < node.key:
-            return self.search_helper(node.left, key)
-        return self.search_helper(node.right, key)
+            return self._search_helper(node.left, key)
+        return self._search_helper(node.right, key)
 
-    def right_rotate(self, node):
+    def _right_rotate(self, node):
         left_child = node.left
         node.left = left_child.right
 
@@ -103,7 +103,7 @@ class RedBlackTree:
         left_child.right = node
         node.parent = left_child
 
-    def left_rotate(self, node):
+    def _left_rotate(self, node):
         right_child = node.right
         node.right = right_child.left
 
@@ -176,10 +176,10 @@ class RedBlackTree:
                     is_left_triangle = (node_to_balance == node_to_balance.parent.right)
                     if is_left_triangle:
                         node_to_balance = node_to_balance.parent
-                        self.left_rotate(node_to_balance)
+                        self._left_rotate(node_to_balance)
                     node_to_balance.parent.color = black
                     node_to_balance.parent.parent.color = red
-                    self.right_rotate(node_to_balance.parent.parent)
+                    self._right_rotate(node_to_balance.parent.parent)
             else:
                 if left_uncle.color == red:
                     node_to_balance.parent.color = black
@@ -190,15 +190,15 @@ class RedBlackTree:
                     is_right_triangle = (node_to_balance == node_to_balance.parent.left)
                     if is_right_triangle:
                         node_to_balance = node_to_balance.parent
-                        self.right_rotate(node_to_balance)
+                        self._right_rotate(node_to_balance)
                     node_to_balance.parent.color = black
                     node_to_balance.parent.parent.color = red
-                    self.left_rotate(node_to_balance.parent.parent)
+                    self._left_rotate(node_to_balance.parent.parent)
 
         self.root.color = black
         return True
 
-    def transplant(self, old_node, new_node):
+    def _transplant(self, old_node, new_node):
         if old_node.parent == self.NULL:
             self.root = new_node
         elif old_node == old_node.parent.left:
@@ -207,7 +207,7 @@ class RedBlackTree:
             old_node.parent.right = new_node
         new_node.parent = old_node.parent
 
-    def minimum(self, start_node):
+    def _minimum(self, start_node):
         if start_node == self.NULL:
             return None
 
@@ -224,16 +224,16 @@ class RedBlackTree:
 
         if node_to_remove.left == self.NULL:
             replacement_node = node_to_remove.right
-            self.transplant(node_to_remove, node_to_remove.right)
+            self._transplant(node_to_remove, node_to_remove.right)
         elif node_to_remove.right == self.NULL:
             replacement_node = node_to_remove.left
-            self.transplant(node_to_remove, node_to_remove.left)
+            self._transplant(node_to_remove, node_to_remove.left)
         else:
-            min_right_node = self.minimum(node_to_remove.right)
+            min_right_node = self._minimum(node_to_remove.right)
 
             replacement_node = min_right_node.right
-            self.transplant(min_right_node, min_right_node.right)
-            self.transplant(node_to_remove, min_right_node)
+            self._transplant(min_right_node, min_right_node.right)
+            self._transplant(node_to_remove, min_right_node)
 
             min_right_node.right = node_to_remove.right
             node_to_remove.right.parent = min_right_node
@@ -254,7 +254,7 @@ class RedBlackTree:
                     if sibling.color == red:
                         sibling.color = black
                         node_to_fix.parent.color = red
-                        self.left_rotate(node_to_fix.parent)
+                        self._left_rotate(node_to_fix.parent)
                         sibling = node_to_fix.parent.right
 
                     if sibling.left.color == black and sibling.right.color == black:
@@ -264,12 +264,12 @@ class RedBlackTree:
                         if sibling.right.color == black:
                             sibling.left.color = black
                             sibling.color = red
-                            self.right_rotate(sibling)
+                            self._right_rotate(sibling)
                             sibling = node_to_fix.parent.right
                         sibling.color = node_to_fix.parent.color
                         node_to_fix.parent.color = black
                         sibling.right.color = black
-                        self.left_rotate(node_to_fix.parent)
+                        self._left_rotate(node_to_fix.parent)
                         node_to_fix = self.root
                 else:
                     sibling = node_to_fix.parent.left
@@ -277,7 +277,7 @@ class RedBlackTree:
                     if sibling.color == red:
                         sibling.color = black
                         node_to_fix.parent.color = red
-                        self.right_rotate(node_to_fix.parent)
+                        self._right_rotate(node_to_fix.parent)
                         sibling = node_to_fix.parent.left
 
                     if sibling.left.color == black and sibling.right.color == black:
@@ -287,12 +287,12 @@ class RedBlackTree:
                         if sibling.left.color == black:
                             sibling.right.color = black
                             sibling.color = red
-                            self.left_rotate(sibling)
+                            self._left_rotate(sibling)
                             sibling = node_to_fix.parent.left
                         sibling.color = node_to_fix.parent.color
                         node_to_fix.parent.color = black
                         sibling.left.color = black
-                        self.right_rotate(node_to_fix.parent)
+                        self._right_rotate(node_to_fix.parent)
                         node_to_fix = self.root
             node_to_fix.color = black
         return True
