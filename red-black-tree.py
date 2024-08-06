@@ -58,16 +58,17 @@ class RedBlackTree:
         if level_nodes:
             self.print_level(level_nodes, current_level)
 
-    def print_level(self, nodes, level):
+    @staticmethod
+    def print_level(nodes, level):
         indent = " " * (2 ** (4 - level))
         print(indent + "   ".join([f"{key}:{color}" for key, color in nodes]))
         print(indent)
 
     def search(self, key):
-        result = self.search_helper(self.root, key)
-        if result == self.NULL:
+        search_result = self.search_helper(self.root, key)
+        if search_result == self.NULL:
             return None
-        return result
+        return search_result
 
     def search_helper(self, node, key):
         if node == self.NULL:
