@@ -12,7 +12,6 @@ class Node:
         self.parent = None
         self.left = None
         self.right = None
-        self.size = 0
 
     def __str__(self):
         return f"{self.key}({self.print_color()})"
@@ -216,6 +215,15 @@ class RedBlackTree:
             min_node = min_node.left
         return min_node
 
+    def _maximum(self, start_node):
+        if start_node == self.NULL:
+            return None
+
+        max_node = start_node
+        while max_node.right != self.NULL:
+            min_node = max_node.right
+        return max_node
+
     def remove(self, key):
         node_to_remove = self.search(key)
 
@@ -333,8 +341,8 @@ class Group:
         else:
             print(f"Failed To Remove {value}")
 
-    def search(self, value):
-        return self.tree.search(value)
+    def contains(self, value):
+        return self.tree.search(value) is not None
 
     def values(self):
         return self.tree.inorder()
