@@ -243,6 +243,15 @@ class RedBlackTree:
 
 
 
+    def inorder(self):
+        def inorder_helper(node, res):
+            if node is not None:
+                inorder_helper(node.left, res)
+                res.append(node.key)
+                inorder_helper(node.right, res)
+        res = []
+        inorder_helper(self.root, res)
+        return res
 
 
 def test():
@@ -282,5 +291,6 @@ def test():
     difference_tree = rbt.set_difference(rbt, rbt2)
     difference_tree.print_tree()
 
+    print(union_tree.inorder())
 
 
