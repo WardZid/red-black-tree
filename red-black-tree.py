@@ -1,4 +1,3 @@
-
 from collections import deque
 
 
@@ -315,7 +314,6 @@ class RedBlackTree:
             self._inorder_helper(node.left, res)
             res.append(node.key)
             self._inorder_helper(node.right, res)
-
 
 
 class Group:
