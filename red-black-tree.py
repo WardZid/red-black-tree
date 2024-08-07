@@ -269,6 +269,7 @@ class RedBlackTree:
             node_to_remove.left.parent = min_right_node
 
             min_right_node.color = node_to_remove.color
+            min_right_node.black_height = node_to_remove.black_height
 
         black_depth_violated = (node_to_remove.color == black)
         if black_depth_violated:
@@ -281,21 +282,35 @@ class RedBlackTree:
                     if sibling.color == red:
                         sibling.color = black
                         node_to_fix.parent.color = red
+
+                        sibling.black_height += 1
+                        node_to_fix.parent -= 1
+
                         self._left_rotate(node_to_fix.parent)
                         sibling = node_to_fix.parent.right
 
                     if sibling.left.color == black and sibling.right.color == black:
                         sibling.color = red
+                        sibling.black_height -= 1
                         node_to_fix = node_to_fix.parent
                     else:
                         if sibling.right.color == black:
                             sibling.left.color = black
                             sibling.color = red
+
+                            sibling.left.black_height += 1
+                            sibling.black_height -= 1
+
                             self._right_rotate(sibling)
                             sibling = node_to_fix.parent.right
+
                         sibling.color = node_to_fix.parent.color
                         node_to_fix.parent.color = black
                         sibling.right.color = black
+
+                        node_to_fix.parent.black_height += 1
+                        sibling.right.black_height += 1
+
                         self._left_rotate(node_to_fix.parent)
                         node_to_fix = self.root
                 else:
@@ -304,18 +319,28 @@ class RedBlackTree:
                     if sibling.color == red:
                         sibling.color = black
                         node_to_fix.parent.color = red
+
+                        sibling.black_height += 1
+                        node_to_fix.parent -= 1
+
                         self._right_rotate(node_to_fix.parent)
                         sibling = node_to_fix.parent.left
 
                     if sibling.left.color == black and sibling.right.color == black:
                         sibling.color = red
+                        sibling.black_height -= 1
                         node_to_fix = node_to_fix.parent
                     else:
                         if sibling.left.color == black:
                             sibling.right.color = black
                             sibling.color = red
+
+                            sibling.right.black_height += 1
+                            sibling.black_height -= 1
+
                             self._left_rotate(sibling)
                             sibling = node_to_fix.parent.left
+
                         sibling.color = node_to_fix.parent.color
                         node_to_fix.parent.color = black
                         sibling.left.color = black
