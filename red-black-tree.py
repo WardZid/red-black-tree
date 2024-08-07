@@ -220,7 +220,7 @@ class RedBlackTree:
 
         max_node = start_node
         while max_node.right != self.NULL:
-            min_node = max_node.right
+            max_node = max_node.right
         return max_node
 
     def remove(self, key):
