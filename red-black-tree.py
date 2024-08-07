@@ -282,6 +282,5 @@ def test():
     difference_tree = rbt.set_difference(rbt, rbt2)
     difference_tree.print_tree()
 
-test()
 
 
