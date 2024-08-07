@@ -11,6 +11,7 @@ class Node:
         self.parent = None
         self.left = None
         self.right = None
+        self.black_height = 0
 
     def __str__(self):
         return f"{self.key}({self.print_color()})"
@@ -47,7 +48,7 @@ class RedBlackTree:
                 current_level = level
 
             color = "R" if node.color == red else "B"
-            level_nodes.append((node.key, color))
+            level_nodes.append((node.key, color, node.black_height))
 
             if node.left and node.left != self.NULL:
                 queue.append((node.left, level + 1))
@@ -62,7 +63,7 @@ class RedBlackTree:
     @staticmethod
     def _print_level(nodes, level):
         indent = " " * (2 ** (4 - level))
-        print(indent + "   ".join([f"{key}:{color}" for key, color in nodes]))
+        print(indent + "   ".join([f"{key}:{color}:{black_height}" for key, color, black_height in nodes]))
         print(indent)
 
     def search(self, key):
@@ -129,6 +130,7 @@ class RedBlackTree:
         if self.root == self.NULL:
             self.root = new_node
             self.root.color = black
+            self.root.black_height = 1
             return True
 
 
@@ -169,6 +171,10 @@ class RedBlackTree:
                     node_to_balance.parent.color = black
                     right_uncle.color = black
                     node_to_balance.parent.parent.color = red #grandparent.color = red
+
+                    node_to_balance.parent.black_height += 1
+                    right_uncle.black_height += 1
+
                     node_to_balance = node_to_balance.parent.parent #grandparent
                 else:
                     is_left_triangle = (node_to_balance == node_to_balance.parent.right)
@@ -177,12 +183,20 @@ class RedBlackTree:
                         self._left_rotate(node_to_balance)
                     node_to_balance.parent.color = black
                     node_to_balance.parent.parent.color = red
+
+                    node_to_balance.parent.black_height += 1
+                    node_to_balance.parent.parent.black_height -= 1
+
                     self._right_rotate(node_to_balance.parent.parent)
             else:
                 if left_uncle.color == red:
                     node_to_balance.parent.color = black
                     left_uncle.color = black
                     node_to_balance.parent.parent.color = red  # grandparent.color = red
+
+                    node_to_balance.parent.black_height += 1
+                    left_uncle.black_height += 1
+
                     node_to_balance = node_to_balance.parent.parent
                 else:
                     is_right_triangle = (node_to_balance == node_to_balance.parent.left)
@@ -191,9 +205,15 @@ class RedBlackTree:
                         self._right_rotate(node_to_balance)
                     node_to_balance.parent.color = black
                     node_to_balance.parent.parent.color = red
+
+                    node_to_balance.parent.black_height += 1
+                    node_to_balance.parent.parent.black_height -= 1
+
                     self._left_rotate(node_to_balance.parent.parent)
 
-        self.root.color = black
+        if self.root.color == red:
+            self.root.color = black
+            self.root.black_height += 1
         return True
 
     def _transplant(self, old_node, new_node):
@@ -349,36 +369,49 @@ class Group:
 
 group = Group()
 group.insert(4)
+print(group)
 group.insert(12)
+print(group)
 group.insert(9)
+print(group)
 group.insert(2)
+print(group)
 group.insert(6)
+print(group)
+print(group)
 group.insert(45)
+print(group)
 group.insert(8)
+print(group)
 group.insert(15)
+print(group)
 group.insert(5)
+print(group)
 group.insert(10)
+print(group)
 group.insert(16)
+print(group)
 group.insert(7)
+print(group)
 
 
 print(group.values())
 
 
 print(group)
-result = group.search(10)
-print(result)
-
-
-group.remove(10)
-print(group)
-
-
-group.remove(6)
-print(group)
-
-
-group.remove(9)
-print(group)
-
-
+# result = group.contains(10)
+# print(result)
+# group.remove(10)
+# print(group)
+# result = group.contains(10)
+# print(result)
+#
+#
+# group.remove(6)
+# print(group)
+#
+#
+# group.remove(9)
+# print(group)
+#
+#
