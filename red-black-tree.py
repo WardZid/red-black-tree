@@ -83,6 +83,21 @@ class RedBlackTree:
         tree.black_height = self.black_height(tree.left) + (1 if self.is_black(tree) else 0)
         return tree
 
+    def search(self, key):
+        def search_helper(node, key):
+            if node is None:
+                return None
+
+            if node.key == key:
+                return node
+
+            if key < node.key:
+                return search_helper(node.left, key)
+            return search_helper(node.right, key)
+
+        search_result = search_helper(self.root, key)
+        return search_result
+
     def insert(self, key):
         def insert_rec(tree, key):
             if tree is None:
@@ -100,7 +115,6 @@ class RedBlackTree:
         self.root = insert_rec(self.root, key)
         if self.root:
             self.root.color = True
-
 
     def delete(self, key):
         def delete_rec(tree, key):
@@ -197,7 +211,6 @@ class RedBlackTree:
             merged_right = union_helper(right1, right2)
             return self.join_with_key(merged_left, tree2.key if in_tree1 or in_tree2 else None, merged_right)
         return RedBlackTree(union_helper(tree1.root, tree2.root))
-
 
     def intersection(self, tree1, tree2):
         def intersection_helper(tree1, tree2):
