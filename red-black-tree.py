@@ -149,10 +149,10 @@ class RedBlackTree:
 
     @staticmethod
     def join_right(left_tree, key, right_tree):
-        if left_tree is None:
-            return right_tree
-        if right_tree is None:
-            return left_tree
+        # if left_tree is None:
+        #     return right_tree
+        # if right_tree is None:
+        #     return left_tree
 
         if RedBlackTree.black_height(left_tree) < RedBlackTree.black_height(right_tree):
             right_tree.left = RedBlackTree.join_right(left_tree, key, right_tree.left)
@@ -166,10 +166,10 @@ class RedBlackTree:
     @staticmethod
     def join_left(left_tree, key, right_tree):
 
-        if right_tree is None:
-            return left_tree
-        if left_tree is None:
-            return right_tree
+        # if right_tree is None:
+        #     return left_tree
+        # if left_tree is None:
+        #     return right_tree
 
         if RedBlackTree.black_height(left_tree) < RedBlackTree.black_height(right_tree):
             right_tree.left = RedBlackTree.join_left(left_tree, key, right_tree.left)
@@ -182,26 +182,10 @@ class RedBlackTree:
 
     @staticmethod
     def join(left_tree, key, right_tree):
-
-        if right_tree is None:
-            return left_tree
-        if left_tree is None:
-            return right_tree
-
-        if RedBlackTree.black_height(left_tree) > RedBlackTree.black_height(right_tree):
-            tree = RedBlackTree.join_right(left_tree, key, right_tree)
-            if tree.color is False and tree.right is not None and tree.right.color is False:
-                tree.color = True
-            return tree
-        elif RedBlackTree.black_height(left_tree) < RedBlackTree.black_height(right_tree):
-            tree = RedBlackTree.join_left(left_tree, key, right_tree)
-            if tree.color is False and tree.left is not None and tree.left.color is False:
-                tree.color = True
-            return tree
+        if RedBlackTree.black_height(left_tree) <= RedBlackTree.black_height(right_tree):
+            return RedBlackTree.join_right(left_tree, key, right_tree)
         else:
-            if left_tree.color is True and right_tree.color is True:
-                return Node(key, False, left_tree, right_tree, RedBlackTree.black_height(left_tree) + 1)
-            return Node(key, True,left_tree, right_tree,RedBlackTree.black_height(left_tree) + 1)
+            return RedBlackTree.join_left(left_tree, key, right_tree)
 
     @staticmethod
     def join_with_key(left_tree, key, right_tree):
@@ -245,11 +229,11 @@ class RedBlackTree:
                 return tree1
 
             left1, in_tree1, right1 = RedBlackTree.split(tree1, tree2.key)
-            # left2, in_tree2, right2 = RedBlackTree.split(tree2, tree2.key)
+            left2, in_tree2, right2 = RedBlackTree.split(tree2, tree2.key)
 
-            merged_left = union_helper(left1, tree2.left)
-            merged_right = union_helper(right1, tree2.right)
-            return RedBlackTree.join_with_key(merged_left, tree2.key, merged_right)
+            merged_left = union_helper(left1, left2)
+            merged_right = union_helper(right1, right2)
+            return RedBlackTree.join_with_key(merged_left, tree2.key if in_tree1 or in_tree2 else None, merged_right)
         return RedBlackTree(union_helper(tree1.root, tree2.root))
 
     @staticmethod
@@ -352,34 +336,27 @@ def print_1000():
     trees = []
     with open("data_struct(1000x1000).txt", "r") as file:
         for line in file:
-            numbers = list(map(float, line.split(',')))
-            # print(f"Length of numbers array: {len(numbers)}")
+            numbers = map(float, line.split(','))
             tree = RedBlackTree()
             for number in numbers:
                 tree.insert(number)
             trees.append(tree)
-            # print(f"Length of tree after adding numbers: {len(tree.values())}")
 
 
     if trees:
-        print(len(trees))
         union_tree = trees[0]
         for i in range(1, len(trees)):
-            print(f"<BEFORE: union tree size: ({len(union_tree.values())}) | tree to add size: ({len(trees[i].values())})")
-            union_tree = RedBlackTree.union(union_tree, trees[i])
-            print(f">AFTER: union tree size: ({len(union_tree.values())})")
+            union_tree = RedBlackTree.union(union_tree,trees[i])
 
-        # union_tree.print_tree()
+        union_tree.print_tree()
         print(union_tree.values())
-        print(len(union_tree.values()))
-        for key in union_tree.values():
-            union_tree.delete(key)
-
-        print(len(union_tree.values()))
-        print("Union tree after deletions:", union_tree.values())
 
 
+    # for key in union_tree.values():
+    #     union_tree.delete(key)
+    #
+    # print("Union tree after deletions:", union_tree.values())
 
 
-
-print_1000()
+# print_1000()
+test()
