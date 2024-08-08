@@ -149,10 +149,10 @@ class RedBlackTree:
 
     @staticmethod
     def join_right(left_tree, key, right_tree):
-        if left_tree is None:
-            return right_tree
-        if right_tree is None:
-            return left_tree
+        # if left_tree is None:
+        #     return right_tree
+        # if right_tree is None:
+        #     return left_tree
 
         if RedBlackTree.black_height(left_tree) < RedBlackTree.black_height(right_tree):
             right_tree.left = RedBlackTree.join_right(left_tree, key, right_tree.left)
@@ -166,10 +166,10 @@ class RedBlackTree:
     @staticmethod
     def join_left(left_tree, key, right_tree):
 
-        if right_tree is None:
-            return left_tree
-        if left_tree is None:
-            return right_tree
+        # if right_tree is None:
+        #     return left_tree
+        # if left_tree is None:
+        #     return right_tree
 
         if RedBlackTree.black_height(left_tree) < RedBlackTree.black_height(right_tree):
             right_tree.left = RedBlackTree.join_left(left_tree, key, right_tree.left)
@@ -358,4 +358,5 @@ def print_1000():
     # print("Union tree after deletions:", union_tree.values())
 
 
-print_1000()
+# print_1000()
+test()
