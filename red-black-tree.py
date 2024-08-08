@@ -1,8 +1,8 @@
 from collections import deque
 
 
-red = True
-black = False
+red = False
+black = True
 
 class Node:
     def __init__(self, key, color=red):
@@ -21,50 +21,38 @@ class Node:
             return "red"
         return "black"
 
+    def print_subtree(self, start_node=None):
+        def print_helper(node=None, indent="", last=True):
+            if node != RedBlackTree.NULL:
+                print(indent, end="")
+                if last:
+                    print("R----", end="")
+                    indent += "     "
+                else:
+                    print("L----", end="")
+                    indent += "|    "
+                color = "RED" if not node.color else "BLACK"
+                print(f"{node.key}({color}) bh:{node.black_height}")
+                print_helper(node.left, indent, False)
+                print_helper(node.right, indent, True)
+
+        if start_node is None:
+            print_helper(self)
+        else:
+            print_helper(start_node)
+
 class RedBlackTree:
+    NULL = Node(0, black)
+    
     def __init__(self):
-        self.NULL = Node(0, black)
         self.root = self.NULL
 
     def __str__(self):
-        self.print_bfs()
-        return ""
-
-    def print_bfs(self):
         if self.root == self.NULL:
-            print("Tree is empty")
-            return
-
-        print("***********************************************START")
-        queue = deque([(self.root, 0)])
-        current_level = 0
-        level_nodes = []
-
-        while queue:
-            node, level = queue.popleft()
-            if level > current_level:
-                self._print_level(level_nodes, current_level)
-                level_nodes = []
-                current_level = level
-
-            color = "R" if node.color == red else "B"
-            level_nodes.append((node.key, color, node.black_height))
-
-            if node.left and node.left != self.NULL:
-                queue.append((node.left, level + 1))
-            if node.right and node.right != self.NULL:
-                queue.append((node.right, level + 1))
-
-        if level_nodes:
-            self._print_level(level_nodes, current_level)
-
-        print("***********************************************END")
-
-    @staticmethod
-    def _print_level(nodes, level):
-        indent = " " * (2 ** (4 - level))
-        print(indent + "   ".join([f"{key}:{color}:{black_height}" for key, color, black_height in nodes]))
-        print(indent)
+            print("Empty Tree")
+        else:
+            self.root.print_subtree()
+        return ""
 
     def search(self, key):
         search_result = self._search_helper(self.root, key)
@@ -350,15 +338,14 @@ class RedBlackTree:
         return True
 
     def inorder(self):
+        def inorder_helper(node, result):
+            if node != self.NULL:
+                inorder_helper(node.left, result)
+                result.append(node.key)
+                inorder_helper(node.right, result)
         res = []
-        self._inorder_helper(self.root, res)
+        inorder_helper(self.root, res)
         return res
-
-    def _inorder_helper(self, node, res):
-        if node != self.NULL:
-            self._inorder_helper(node.left, res)
-            res.append(node.key)
-            self._inorder_helper(node.right, res)
 
 
 class Group:
@@ -367,7 +354,7 @@ class Group:
         self.size = 0
 
     def __str__(self):
-        self.tree.print_bfs()
+        print(self.tree)
         return ""
 
     def insert(self, value):
