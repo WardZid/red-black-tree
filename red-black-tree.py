@@ -1,17 +1,25 @@
 from collections import deque
 
-
 red = False
 black = True
 
 class Node:
-    def __init__(self, key, color=red):
+    def __init__(self, key, color=red, parent=None, left=None, right=None, black_height=None, is_nil=False):
         self.key = key
         self.color = color
-        self.parent = None
-        self.left = None
-        self.right = None
-        self.black_height = 0
+        self.parent = parent
+        self.left = left
+        self.right = right
+        self.black_height = black_height if black_height is not None else 0
+        self.is_nil = is_nil
+
+
+        if left is not None and not left.is_nil:
+            left.parent = self
+        if right is not None and not right.is_nil:
+            right.parent = self
+
+        self.fix_black_height()
 
     def __str__(self):
         return f"{self.key}({self.print_color()})"
@@ -41,11 +49,24 @@ class Node:
         else:
             print_helper(start_node)
 
+    @staticmethod
+    def rank(node):
+        if node is None or node == RedBlackTree.NULL:
+            return 0
+        if node.color == black:
+            return 2 * (node.black_height - 1)
+        return (2 * node.black_height) - 1
+
+    def fix_black_height(self):
+        if self.left is not None and self.right is not None:
+            self.black_height = max(self.left.black_height, self.right.black_height)
+        self.black_height += 1 if self.color == black and not self.is_nil else 0
+
 class RedBlackTree:
-    NULL = Node(0, black)
-    
-    def __init__(self):
-        self.root = self.NULL
+    NULL = Node(0, black, is_nil=True)
+
+    def __init__(self, root=NULL):
+        self.root = root
 
     def __str__(self):
         if self.root == self.NULL:
@@ -80,7 +101,7 @@ class RedBlackTree:
 
         left_child.parent = node.parent
 
-        if node.parent is self.NULL:
+        if node.parent == self.NULL:
             self.root = left_child
         elif node == node.parent.right:
             node.parent.right = left_child
@@ -99,7 +120,7 @@ class RedBlackTree:
 
         right_child.parent = node.parent
 
-        if node.parent is self.NULL:
+        if node.parent == self.NULL:
             self.root = right_child
         elif node == node.parent.left:
             node.parent.left = right_child
@@ -347,6 +368,114 @@ class RedBlackTree:
         inorder_helper(self.root, res)
         return res
 
+    @staticmethod
+    def _join_right(left_tree, key, right_tree):
+        def _left_rotate(node):
+            right_child = node.right
+            node.right = right_child.left
+
+            if right_child.left != RedBlackTree.NULL:
+                right_child.left.parent = node
+
+            right_child.parent = node.parent
+
+            if node.parent != RedBlackTree.NULL:
+                if node == node.parent.left:
+                    node.parent.left = right_child
+                else:
+                    node.parent.right = right_child
+
+            right_child.left = node
+            node.parent = right_child
+            return right_child
+
+        if Node.rank(left_tree) == (Node.rank(right_tree) // 2) * 2:
+            return Node(key, red, RedBlackTree.NULL, left_tree, right_tree, left_tree.black_height)
+        tree = Node(left_tree.key, left_tree.color, RedBlackTree.NULL, left_tree.left, RedBlackTree._join_right(left_tree.right, key, right_tree), left_tree.black_height)
+
+        if left_tree.color == black and tree.right.color == red and tree.right.right.color == red:
+            tree.right.right.color = black
+            tree = _left_rotate(tree)
+            tree.color = left_tree.color
+        return tree
+
+    @staticmethod
+    def _join_left(left_tree, key, right_tree):
+        def _right_rotate(node):
+            left_child = node.left
+            node.left = left_child.right
+
+            if left_child.right != RedBlackTree.NULL:
+                left_child.right.parent = node
+
+            left_child.parent = node.parent
+
+            if node.parent != RedBlackTree.NULL:
+                if node == node.parent.right:
+                    node.parent.right = left_child
+                else:
+                    node.parent.left = left_child
+
+            left_child.right = node
+            node.parent = left_child
+            return left_child
+
+        if Node.rank(right_tree) == (Node.rank(left_tree) // 2) * 2:
+            return Node(key, red, RedBlackTree.NULL, left_tree, right_tree, right_tree.black_height)
+        tree = Node(right_tree.key, right_tree.color, RedBlackTree.NULL,
+                    RedBlackTree._join_left(left_tree, key, right_tree.left), right_tree.right, right_tree.black_height)
+
+        if right_tree.color == black and tree.left.color == red and tree.left.left.color == red:
+            tree.left.left.color = black
+            tree = _right_rotate(tree)
+            tree.color = right_tree.color
+        return tree
+
+    @staticmethod
+    def join(left_tree, key, right_tree):
+        if Node.rank(left_tree) // 2 > Node.rank(right_tree) // 2:
+            tree = RedBlackTree._join_right(left_tree, key, right_tree)
+            if tree.color == red and tree.right.color == red:
+                tree = Node(tree.key, black, RedBlackTree.NULL, tree.left, tree.right)
+        elif Node.rank(left_tree) // 2 < Node.rank(right_tree) // 2:
+            tree = RedBlackTree._join_left(left_tree, key, right_tree)
+            if tree.color == red and tree.left.color == red:
+                tree = Node(tree.key, black, RedBlackTree.NULL, tree.left, tree.right)
+        elif left_tree.color == black and right_tree.color == black:
+            tree = Node(key, red, RedBlackTree.NULL, left_tree, right_tree)
+        else:
+            tree = Node(key, black, RedBlackTree.NULL, left_tree, right_tree)
+
+        return tree
+
+    @staticmethod
+    def split(tree, key):
+        if tree == RedBlackTree.NULL:
+            return RedBlackTree.NULL, False, RedBlackTree.NULL
+        if key == tree.key:
+            return tree.left, True, tree.right
+        elif key < tree.key:
+            l_left, b, l_right = RedBlackTree.split(tree.left, key)
+            return l_left, b, RedBlackTree.join(l_right, tree.key, tree.right)
+        else:
+            r_left, b, r_right = RedBlackTree.split(tree.right, key)
+            return RedBlackTree.join(tree.left, tree.key, r_left), b, r_right
+
+    @staticmethod
+    def union(tree_1, tree_2):
+        def union_rec(tree1, tree2):
+            if tree1 == RedBlackTree.NULL:
+                return tree2
+            if tree2 == RedBlackTree.NULL:
+                return tree1
+
+            left1, b, right1 = RedBlackTree.split(tree1, tree2.key)
+            t_left = union_rec(left1, tree2.left)
+            t_right = union_rec(right1, tree2.right)
+            return RedBlackTree.join(t_left, tree2.key, t_right)
+
+        union_tree = union_rec(tree_1.root, tree_2.root)
+        return RedBlackTree(union_tree)
 
 class Group:
     def __init__(self):
@@ -378,52 +507,81 @@ class Group:
         return self.tree.inorder()
 
 
-
-group = Group()
-group.insert(4)
-print(group)
-group.insert(12)
-print(group)
-group.insert(9)
-print(group)
-group.insert(2)
-print(group)
-group.insert(6)
-print(group)
-print(group)
-group.insert(45)
-print(group)
-group.insert(8)
-print(group)
-group.insert(15)
-print(group)
-group.insert(5)
-print(group)
-group.insert(10)
-print(group)
-group.insert(16)
-print(group)
-group.insert(7)
-print(group)
-
-
-print(group.values())
-
-
-print(group)
-# result = group.contains(10)
-# print(result)
-# group.remove(10)
+#
+# group = Group()
+# group.insert(4)
 # print(group)
-# result = group.contains(10)
-# print(result)
-#
-#
-# group.remove(6)
+# group.insert(12)
+# print(group)
+# group.insert(9)
+# print(group)
+# group.insert(2)
+# print(group)
+# group.insert(6)
+# print(group)
+# print(group)
+# group.insert(45)
+# print(group)
+# group.insert(8)
+# print(group)
+# group.insert(15)
+# print(group)
+# group.insert(5)
+# print(group)
+# group.insert(10)
+# print(group)
+# group.insert(16)
+# print(group)
+# group.insert(7)
 # print(group)
 #
 #
-# group.remove(9)
+# print(group.values())
+#
+#
 # print(group)
-#
-#
+
+
+
+def test():
+    # Create an instance of RedBlackTree
+    rbt = RedBlackTree()
+
+    # Insert elements into the red-black tree
+    keys = [20, 15, 25, 10, 5, 1]
+    for key in keys:
+        rbt.insert(key)
+        # rbt.print_tree()
+        # print("********************************************",key)
+
+    # Print the red-black tree
+    print("Red-Black Tree:")
+    print(rbt)
+
+    # Perform union, intersection, and set difference operations
+    rbt2 = RedBlackTree()
+    keys2 = [30, 25, 40, 35]
+    for key in keys2:
+        rbt2.insert(key)
+
+    print("\nRed-Black Tree 2:")
+    print(rbt2)
+
+    print("\nUnion of Tree 1 and Tree 2:")
+    union_tree = RedBlackTree.union(rbt, rbt2)
+    # rbt.print_tree(union_tree)
+    print(union_tree)
+
+    print(union_tree.inorder())
+
+    #
+    # print("\nIntersection of Tree 1 and Tree 2:")
+    # intersection_tree = RedBlackTree.intersection(rbt, rbt2)
+    # print(intersection_tree)
+    #
+    # print("\nSet Difference of Tree 1 and Tree 2:")
+    # difference_tree = RedBlackTree.set_difference(rbt, rbt2)
+    # difference_tree.print_tree()
+
+
+test()
