@@ -407,12 +407,6 @@ class RedBlackTree:
             node.parent = right_child
             return right_child
 
-        if left_tree is None:
-            print("LEFT NONE")
-            right_tree.print_subtree()
-        if right_tree is None:
-            print("RIGHT NONE")
-
         if Node.rank(left_tree) == (Node.rank(right_tree) // 2) * 2:
             return Node(key, red, RedBlackTree.NULL, left_tree, right_tree, left_tree.black_height)
         tree = Node(left_tree.key, left_tree.color, RedBlackTree.NULL, left_tree.left, RedBlackTree._join_right(left_tree.right, key, right_tree), left_tree.black_height)
