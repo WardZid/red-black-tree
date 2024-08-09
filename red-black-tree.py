@@ -19,10 +19,22 @@ class Node:
         if right is not None and not right.is_nil:
             right.parent = self
 
-        self.fix_black_height()
+        if black_height is None:
+            self.fix_black_height()
 
     def __str__(self):
         return f"{self.key}({self.print_color()})"
+
+    def fix_black_height(self):
+        if self.left is not None or self.right is not None:
+            if self.left is None:
+                self.black_height = self.right.black_height
+            elif self.right is None:
+                self.black_height = self.left.black_height
+            else:
+                self.black_height = max(self.left.black_height, self.right.black_height)
+
+        self.black_height += 1 if self.color == black and not self.is_nil else 0
 
     def print_color(self):
         if self.color == red:
@@ -57,10 +69,6 @@ class Node:
             return 2 * (node.black_height - 1)
         return (2 * node.black_height) - 1
 
-    def fix_black_height(self):
-        if self.left is not None and self.right is not None:
-            self.black_height = max(self.left.black_height, self.right.black_height)
-        self.black_height += 1 if self.color == black and not self.is_nil else 0
 
 class RedBlackTree:
     NULL = Node(0, black, is_nil=True)
@@ -153,7 +161,7 @@ class RedBlackTree:
             elif new_node.key > current.key:
                 current = current.right
             else:
-                print("duplicates not supported")
+                # print("duplicates not supported")
                 return False
 
         # now current is NULL
@@ -370,6 +378,10 @@ class RedBlackTree:
 
     @staticmethod
     def _join_right(left_tree, key, right_tree):
+
+        if left_tree is None or left_tree == RedBlackTree.NULL:
+            return Node(key, black, RedBlackTree.NULL, RedBlackTree.NULL, right_tree, right_tree.black_height + 1)
+
         def _left_rotate(node):
             right_child = node.right
             node.right = right_child.left
@@ -389,6 +401,12 @@ class RedBlackTree:
             node.parent = right_child
             return right_child
 
+        if left_tree is None:
+            print("LEFT NONE")
+            right_tree.print_subtree()
+        if right_tree is None:
+            print("RIGHT NONE")
+
         if Node.rank(left_tree) == (Node.rank(right_tree) // 2) * 2:
             return Node(key, red, RedBlackTree.NULL, left_tree, right_tree, left_tree.black_height)
         tree = Node(left_tree.key, left_tree.color, RedBlackTree.NULL, left_tree.left, RedBlackTree._join_right(left_tree.right, key, right_tree), left_tree.black_height)
@@ -401,6 +419,9 @@ class RedBlackTree:
 
     @staticmethod
     def _join_left(left_tree, key, right_tree):
+        if right_tree is None or right_tree == RedBlackTree.NULL:
+            return Node(key, black, RedBlackTree.NULL, left_tree, RedBlackTree.NULL, left_tree.black_height + 1)
+
         def _right_rotate(node):
             left_child = node.left
             node.left = left_child.right
@@ -476,6 +497,7 @@ class RedBlackTree:
 
         union_tree = union_rec(tree_1.root, tree_2.root)
         return RedBlackTree(union_tree)
+
 
 class Group:
     def __init__(self):
@@ -568,10 +590,15 @@ def test():
     print(rbt2)
 
     print("\nUnion of Tree 1 and Tree 2:")
-    union_tree = RedBlackTree.union(rbt, rbt2)
+    union_tree = RedBlackTree.slow_union(rbt, rbt2)
     # rbt.print_tree(union_tree)
     print(union_tree)
 
+    print("group 1:")
+    print(rbt.inorder())
+    print("group 2:")
+    print(rbt2.inorder())
+    print("union:")
     print(union_tree.inorder())
 
     #
@@ -583,5 +610,27 @@ def test():
     # difference_tree = RedBlackTree.set_difference(rbt, rbt2)
     # difference_tree.print_tree()
 
+def print_1000():
+    trees = []
+    with open("data_struct(1000x1000).txt", "r") as file:
+        for line in file:
+            numbers = map(float, line.split(','))
+            tree = RedBlackTree()
+            for number in numbers:
+                tree.insert(number)
+            trees.append(tree)
+            # print(f"tree size: ({len(tree.values())})")
 
-test()
+
+    if trees:
+        union_tree = trees[0]
+        print(union_tree)
+        for i in range(1, len(trees)):
+            # union_tree = RedBlackTree.slow_union(union_tree, trees[i])
+            # print(f"<BEFORE: union tree size: ({len(union_tree.inorder())}) | tree to add size: ({len(trees[i].inorder())})")
+            union_tree = RedBlackTree.union(union_tree, trees[i])
+            # print(f">AFTER: union tree size: ({len(union_tree.inorder())})")
+        print(len(union_tree.inorder()))
+
+print_1000()
+# test()
