@@ -372,6 +372,11 @@ class RedBlackTree:
             node_to_fix.color = black
         return True
 
+    def delete(self, key):
+        left, exists, right = RedBlackTree.split(self.root, key)
+        self.root = RedBlackTree.join2(left, right)
+
+
     def inorder(self):
         def inorder_helper(node, result):
             if node != self.NULL:
@@ -686,7 +691,7 @@ def print_1000():
         print(len(union_tree.inorder()))
 
         for key in union_tree.inorder():
-            union_tree.remove(key)
+            union_tree.delete(key)
 
         print("Union tree after deletions:", len(union_tree.inorder()))
 
