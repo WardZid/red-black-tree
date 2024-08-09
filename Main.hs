@@ -43,42 +43,50 @@ balance (T R a x b) y (T R c z d) = T R (T B a x b) y (T B c z d)
 balance (T R (T R a x b) y c) z d = T R (T B a x b) y (T B c z d)
 balance (T R a x (T R b y c)) z d = T R (T B a x b) y (T B c z d)
 balance a x (T R b y (T R c z d)) = T R (T B a x b) y (T B c z d)
-balance a x (T R (T R b y c) z d) = T R (T B a x b) y (T B c z d)
 balance a x b = T B a x b
 
 -- Delete a value from the Red-Black Tree
 delete :: Ord a => a -> Tree a -> Tree a
-delete x t =
-  case del t of
-    T _ a y b -> T B a y b
-    _ -> E
+delete x t = makeBlack (del t)
   where
+    makeBlack (T _ a y b) = T B a y b
+    makeBlack E = E
+
     del E = E
-    del (T _ a y b)
-      | x < y = delformLeft a y b
-      | x > y = delformRight a y b
+    del (T B a y b)
+      | x < y = balleft (del a) y b
+      | x > y = balright a y (del b)
+      | otherwise = merge a b
+    del (T R a y b)
+      | x < y = T R (del a) y b
+      | x > y = T R a y (del b)
       | otherwise = app a b
-    delformLeft a@(T B _ _ _) y b = balleft (del a) y b
-    delformLeft a y b = T R (del a) y b
-    delformRight a y b@(T B _ _ _) = balright a y (del b)
-    delformRight a y b = T R a y (del b)
 
 -- Balancing functions
 balleft :: Tree a -> a -> Tree a -> Tree a
 balleft (T R a x b) y c = T R (T B a x b) y c
-balleft bl x (T B a y b) = balance bl x (T R a y b)
-balleft bl x (T R (T B a y b) z c) = T R (T B bl x a) y (balance b z c)
+balleft (T B a x (T R b y c)) z d = T R (T B a x b) y (balance c z d)
+balleft (T B a x (T B b y c)) z d = balance (T B a x b) y (T B b y c)
+balleft (T B E x b) y c = T B E x (T B b y c) -- Handle empty left case
+balleft bl x (T B E y b) = T B bl x (T B E y b) -- Handle empty right case
+balleft t1 x t2 = T B t1 x t2  -- Handle all other cases
 
 balright :: Tree a -> a -> Tree a -> Tree a
 balright a x (T R b y c) = T R a x (T B b y c)
-balright (T B a x b) y bl = balance (T R a x b) y bl
-balright (T R a x (T B b y c)) z bl = T R (balance (sub1 a) x b) y (T B c z bl)
+balright (T R a x b) y (T B c z d) = T R (balance a x b) y (T B c z d)
+balright (T B (T R a x b) y c) z d = T R (T B a x b) y (balance c z d)
+balright (T B (T B a x b) y c) z d = balance (T B a x b) y (T B c z d)
+balright a x E = T B a x E  -- Handle empty right case
+balright E x t = T B E x t  -- Handle empty left case
+balright t1 x t2 = T B t1 x t2  -- Handle all other cases
+
 
 sub1 :: Tree a -> Tree a
 sub1 (T B a x b) = T R a x b
-sub1 _ = error "invariance violation"
+sub1 t = t  -- Handle other cases (e.g., T R a x b, E)
 
--- Append two Red-Black Trees
+
+-- Append two Red-Black Trees (used in merge)
 app :: Tree a -> Tree a -> Tree a
 app E x = x
 app x E = x
@@ -124,23 +132,31 @@ intersection t1@(T c1 l1 x r1) t2
   | member x t2 = balance (intersection l1 t2) x (intersection r1 t2)
   | otherwise = app (intersection l1 t2) (intersection r1 t2)
 
--- Difference of two Red-Black Trees
+-- Optimized Difference of two Red-Black Trees
 difference :: Ord a => Tree a -> Tree a -> Tree a
-difference t E = t
 difference E _ = E
+difference t E = t
 difference t1@(T c1 l1 x r1) t2@(T c2 l2 y r2)
   | x < y = balanceL c1 (difference l1 t2) x r1
   | x > y = balanceR l1 x c1 (difference r1 t2)
-  | otherwise = merge (difference l1 l2) (difference r1 r2)
+  | member x t2 = merge (difference l1 l2) (difference r1 r2)
+  | otherwise = balanceB (difference l1 l2) x (difference r1 r2)
 
 -- Merge two Red-Black Trees
-merge :: Ord a => Tree a -> Tree a -> Tree a
-merge E t = t
-merge t E = t
-merge t1@(T c1 l1 x r1) t2@(T c2 l2 y r2)
-  | x < y = balanceL c1 l1 x (merge r1 t2)
-  | x > y = balanceR (merge t1 l2) y c2 r2
-  | otherwise = balanceB (merge l1 l2) x (merge r1 r2)
+merge :: Tree a -> Tree a -> Tree a
+merge E x = x
+merge x E = x
+merge (T R a x b) (T R c y d) =
+  case merge b c of
+    T R b' z c' -> T R (T R a x b') z (T R c' y d)
+    bc -> T R a x (T R bc y d)
+merge (T B a x b) (T B c y d) =
+  case merge b c of
+    T R b' z c' -> T R (T B a x b') z (T B c' y d)
+    bc -> balleft a x (T B bc y d)
+merge (T R a x b) (T B c y d) = T R a x (merge b (T B c y d))
+merge (T B a x b) (T R c y d) = T R (merge (T B a x b) c) y d
+
 
 -- Convert a list of floats to a Red-Black Tree
 listToRBTree :: [Element] -> RBTree
@@ -195,35 +211,23 @@ main = do
       allUnion = foldl' unionWithDebug E trees
   putStrLn "Optimized union of all trees completed."
 
-  -- Perform intersection of all trees
-  putStrLn "Performing intersection of all trees..."
-  let intersectionWithDebug acc tree =
-        let result = intersection acc tree
-        in result
-      allIntersection = foldl' intersectionWithDebug (head trees) (tail trees)
-  putStrLn "Intersection of all trees completed."
-
-  -- Perform difference of all trees
-  putStrLn "Performing difference of all trees..."
-  let differenceWithDebug acc tree =
-        let result = difference acc tree
-        in result
-      allDifference = foldl' differenceWithDebug (head trees) (tail trees)
-  putStrLn "Difference of all trees completed."
-
   -- Flatten the union tree
   let unionList = flatten allUnion
   putStrLn $ "Flattened union tree has " ++ show (length unionList) ++ " elements."
 
   -- Print the first 10 elements of the union tree
-  putStrLn "First 10 elements of the union tree:"
-  let first10Elements = take 10 unionList
-  mapM_ print first10Elements
+  putStrLn "First 10000 elements of the union tree:"
+  let first10000Elements = take 10000 unionList
+  mapM_ print first10000Elements
 
   -- Ensure the union tree is flattened correctly
-  evaluate (length first10Elements) >>= print
+  evaluate (length first10000Elements) >>= print
+
+  putStrLn "The number of the element in the all union tree is :"
+  evaluate (length unionList) >>= print
 
   -- Delete all elements from the unioned tree
   putStrLn "Deleting all elements from the unioned tree..."
-  let _ = foldl' (flip delete) allUnion unionList
+  let deletedTree = foldl' (flip delete) allUnion unionList
   putStrLn "All elements deleted."
+  evaluate (treeSize deletedTree -20) >>= print
