@@ -1,4 +1,3 @@
-from collections import deque
 
 red = False
 black = True
@@ -376,7 +375,6 @@ class RedBlackTree:
         left, exists, right = RedBlackTree.split(self.root, key)
         self.root = RedBlackTree.join2(left, right)
 
-
     def inorder(self):
         def inorder_helper(node, result):
             if node != self.NULL:
@@ -509,12 +507,13 @@ class RedBlackTree:
             if tree2 == RedBlackTree.NULL:
                 return tree1
 
-            left1, b, right1 = RedBlackTree.split(tree1, tree2.key)
+            left2, tree2_key, right2 = Node.expose(tree2)
+            left1, b, right1 = RedBlackTree.split(tree1, tree2_key)
 
-            t_left = union_rec(left1, tree2.left)
-            t_right = union_rec(right1, tree2.right)
+            t_left = union_rec(left1, left2)
+            t_right = union_rec(right1, right2)
 
-            return RedBlackTree.join(t_left, tree2.key, t_right)
+            return RedBlackTree.join(t_left, tree2_key, t_right)
 
         union_tree = union_rec(tree_1.root, tree_2.root)
         return RedBlackTree(union_tree)
@@ -557,69 +556,22 @@ class RedBlackTree:
         difference_tree = difference_rec(tree_1.root, tree_2.root)
         return RedBlackTree(difference_tree)
 
-class Group:
-    def __init__(self):
-        self.tree = RedBlackTree()
-        self.size = 0
+    def union2(self, tree_2):
+        def union_rec(tree1, tree2):
+            if tree1 == RedBlackTree.NULL:
+                return tree2
+            if tree2 == RedBlackTree.NULL:
+                return tree1
 
-    def __str__(self):
-        print(self.tree)
-        return ""
+            left2, tree2_key, right2 = Node.expose(tree2)
+            left1, b, right1 = RedBlackTree.split(tree1, tree2.key)
 
-    def insert(self, value):
-        if self.tree.insert(value):
-            self.size += 1
-            print(f"Successfully Inserted {value}")
-        else:
-            print(f"Failed To Insert {value}")
+            t_left = union_rec(left1, left2)
+            t_right = union_rec(right1, right2)
 
-    def remove(self, value):
-        if self.tree.remove(value):
-            self.size -= 1
-            print(f"Successfully Removed {value}")
-        else:
-            print(f"Failed To Remove {value}")
+            return RedBlackTree.join(t_left, tree2_key, t_right)
 
-    def contains(self, value):
-        return self.tree.search(value) is not None
-
-    def values(self):
-        return self.tree.inorder()
-
-
-#
-# group = Group()
-# group.insert(4)
-# print(group)
-# group.insert(12)
-# print(group)
-# group.insert(9)
-# print(group)
-# group.insert(2)
-# print(group)
-# group.insert(6)
-# print(group)
-# print(group)
-# group.insert(45)
-# print(group)
-# group.insert(8)
-# print(group)
-# group.insert(15)
-# print(group)
-# group.insert(5)
-# print(group)
-# group.insert(10)
-# print(group)
-# group.insert(16)
-# print(group)
-# group.insert(7)
-# print(group)
-#
-#
-# print(group.values())
-#
-#
-# print(group)
+        self.root = union_rec(self.root, tree_2.root)
 
 
 
@@ -648,14 +600,14 @@ def test():
     print("\nUnion of Tree 1 and Tree 2:")
     union_tree = RedBlackTree.union(rbt1, rbt2)
     print(union_tree)
-
-    print("\nIntersection of Tree 1 and Tree 2:")
-    intersection_tree = RedBlackTree.intersection(rbt1, rbt2)
-    print(intersection_tree)
-
-    print("\nSet Difference of Tree 1 and Tree 2:")
-    difference_tree = RedBlackTree.difference(rbt1, rbt2)
-    print(difference_tree)
+    #
+    # print("\nIntersection of Tree 1 and Tree 2:")
+    # intersection_tree = RedBlackTree.intersection(rbt1, rbt2)
+    # print(intersection_tree)
+    #
+    # print("\nSet Difference of Tree 1 and Tree 2:")
+    # difference_tree = RedBlackTree.difference(rbt1, rbt2)
+    # print(difference_tree)
 
     print("group 1: *********************************************")
     print(rbt1.inorder())
@@ -663,10 +615,11 @@ def test():
     print(rbt2.inorder())
     print("union:*********************************************")
     print(union_tree.inorder())
-    print("intersection:*********************************************")
-    print(intersection_tree.inorder())
-    print("difference: *********************************************")
-    print(difference_tree.inorder())
+    print(len(union_tree.inorder()))
+    # print("intersection:*********************************************")
+    # print(intersection_tree.inorder())
+    # print("difference: *********************************************")
+    # print(difference_tree.inorder())
 
 def print_1000():
     trees = []
@@ -684,9 +637,9 @@ def print_1000():
         union_tree = trees[0]
         print(union_tree)
         for i in range(1, len(trees)):
-            # union_tree = RedBlackTree.slow_union(union_tree, trees[i])
             # print(f"<BEFORE: union tree size: ({len(union_tree.inorder())}) | tree to add size: ({len(trees[i].inorder())})")
-            union_tree = RedBlackTree.union(union_tree, trees[i])
+            # union_tree = RedBlackTree.union(union_tree, trees[i])
+            union_tree.union2(trees[i])
             # print(f">AFTER: union tree size: ({len(union_tree.inorder())})")
         print(len(union_tree.inorder()))
 
@@ -695,5 +648,5 @@ def print_1000():
 
         print("Union tree after deletions:", len(union_tree.inorder()))
 
-print_1000()
+# print_1000()
 # test()
