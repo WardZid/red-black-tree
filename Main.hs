@@ -100,12 +100,12 @@ app a (T R b x c) = T R (app a b) x c
 app (T R a x b) c = T R a x (app b c)
 
 -- Split a Red-Black Tree into two trees and a pivot element
-split :: Ord a => a -> Tree a -> (Tree a, Maybe a, Tree a)
-split _ E = (E, Nothing, E)
+split :: Ord a => a -> Tree a -> (Tree a, a, Tree a)
+split _ E = (E, error "Pivot not found", E) -- Using an error to handle the case where the pivot is not found
 split x (T _ l y r)
   | x < y = let (lt, piv, gt) = split x l in (lt, piv, T B gt y r)
   | x > y = let (lt, piv, gt) = split x r in (T B l y lt, piv, gt)
-  | otherwise = (l, Just y, r)
+  | otherwise = (l, y, r)
 
 -- Optimized union of two Red-Black Trees without duplicates
 optimizedUnion :: Ord a => Tree a -> Tree a -> Tree a
