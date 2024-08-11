@@ -6,6 +6,7 @@ import Data.Maybe (mapMaybe)
 import Text.Read (readMaybe)
 import Control.Exception (evaluate, catch, SomeException)
 
+
 type Element = Float
 
 data Color = R | B deriving (Show, Eq)
@@ -45,59 +46,25 @@ balance (T R a x (T R b y c)) z d = T R (T B a x b) y (T B c z d)
 balance a x (T R b y (T R c z d)) = T R (T B a x b) y (T B c z d)
 balance a x b = T B a x b
 
--- Delete a value from the Red-Black Tree
 delete :: Ord a => a -> Tree a -> Tree a
-delete x t = makeBlack (del t)
+delete k t@(T c l x r) = join l r
   where
-    makeBlack (T _ a y b) = T B a y b
-    makeBlack E = E
+    (l, _, r) = split k t
 
-    del E = E
-    del (T B a y b)
-      | x < y = balleft (del a) y b
-      | x > y = balright a y (del b)
-      | otherwise = optimizedUnion a b
-    del (T R a y b)
-      | x < y = T R (del a) y b
-      | x > y = T R a y (del b)
-      | otherwise = app a b
-
--- Balancing functions
-balleft :: Tree a -> a -> Tree a -> Tree a
-balleft (T R a x b) y c = T R (T B a x b) y c
-balleft (T B a x (T R b y c)) z d = T R (T B a x b) y (balance c z d)
-balleft (T B a x (T B b y c)) z d = balance (T B a x b) y (T B b y c)
-balleft (T B E x b) y c = T B E x (T B b y c) -- Handle empty left case
-balleft bl x (T B E y b) = T B bl x (T B E y b) -- Handle empty right case
-balleft t1 x t2 = T B t1 x t2  -- Handle all other cases
-
-balright :: Tree a -> a -> Tree a -> Tree a
-balright a x (T R b y c) = T R a x (T B b y c)
-balright (T R a x b) y (T B c z d) = T R (balance a x b) y (T B c z d)
-balright (T B (T R a x b) y c) z d = T R (T B a x b) y (balance c z d)
-balright (T B (T B a x b) y c) z d = balance (T B a x b) y (T B c z d)
-balright a x E = T B a x E  -- Handle empty right case
-balright E x t = T B E x t  -- Handle empty left case
-balright t1 x t2 = T B t1 x t2  -- Handle all other cases
-
-sub1 :: Tree a -> Tree a
-sub1 (T B a x b) = T R a x b
-sub1 t = t  -- Handle other cases (e.g., T R a x b, E)
-
--- Append two Red-Black Trees (used in merge)
-app :: Tree a -> Tree a -> Tree a
-app E x = x
-app x E = x
-app (T R a x b) (T R c y d) =
-  case app b c of
+-- Append two Red-Black Trees
+join :: Tree a -> Tree a -> Tree a
+join E x = x
+join x E = x
+join (T R a x b) (T R c y d) =
+  case join b c of
     T R b' z c' -> T R (T R a x b') z (T R c' y d)
     bc -> T R a x (T R bc y d)
-app (T B a x b) (T B c y d) =
-  case app b c of
+join (T B a x b) (T B c y d) =
+  case join b c of
     T R b' z c' -> T R (T B a x b') z (T B c' y d)
-    bc -> balleft a x (T B bc y d)
-app a (T R b x c) = T R (app a b) x c
-app (T R a x b) c = T R a x (app b c)
+    bc -> balance a x (T B bc y d)
+join a (T R b x c) = T R (join a b) x c
+join (T R a x b) c = T R a x (join b c)
 
 -- Split a Red-Black Tree into two trees and a pivot element
 split :: Ord a => a -> Tree a -> (Tree a, a, Tree a)
@@ -109,12 +76,17 @@ split x (T _ l y r)
 
 -- Optimized union of two Red-Black Trees without duplicates
 optimizedUnion :: Ord a => Tree a -> Tree a -> Tree a
-optimizedUnion E t = t
-optimizedUnion t E = t
-optimizedUnion t1@(T c1 l1 x r1) t2 = T c (optimizedUnion l1 l2) x (optimizedUnion r1 r2)
-  where
-    (l2, _, r2) = split x t2
-    T c _ _ _ = t1
+optimizedUnion t1 t2
+  | treeSize t1 > treeSize t2 = unionHelper t1 t2
+  | otherwise = unionHelper t2 t1
+
+-- Helper function where t1 is the larger tree and t2 is the smaller tree
+unionHelper :: Ord a => Tree a -> Tree a -> Tree a
+unionHelper E t = t
+unionHelper t E = t
+unionHelper t1@(T c1 l1 x r1) t2 =
+  let (l2, _, r2) = split x t2
+  in balance (unionHelper l1 l2) x (unionHelper r1 r2)
 
 -- Intersection of two Red-Black Trees
 intersection :: Ord a => Tree a -> Tree a -> Tree a
@@ -122,31 +94,16 @@ intersection E _ = E
 intersection _ E = E
 intersection t1@(T c1 l1 x r1) t2
   | member x t2 = balance (intersection l1 t2) x (intersection r1 t2)
-  | otherwise = app (intersection l1 t2) (intersection r1 t2)
+  | otherwise = join (intersection l1 t2) (intersection r1 t2)
 
 -- Optimized Difference of two Red-Black Trees
 difference :: Ord a => Tree a -> Tree a -> Tree a
 difference E _ = E
 difference t E = t
-difference t1@(T c1 l1 x r1) t2@(T c2 l2 y r2)
-  | x < y = balanceL c1 (difference l1 t2) x r1
-  | x > y = balanceR l1 x c1 (difference r1 t2)
-  | member x t2 = optimizedUnion (difference l1 l2) (difference r1 r2)
-  | otherwise = balanceB (difference l1 l2) x (difference r1 r2)
+difference t1@(T c1 l1 x r1) t2
+  | member x t2 = join (difference l1 t2) (difference r1 t2)
+  | otherwise = balance (difference l1 t2) x (difference r1 t2)
 
--- Balancing functions adapted for union
-balanceL :: Color -> Tree a -> a -> Tree a -> Tree a
-balanceL B (T R (T R a x b) y c) z d = T R (T B a x b) y (T B c z d)
-balanceL B (T R a x (T R b y c)) z d = T R (T B a x b) y (T B c z d)
-balanceL c l x r = T c l x r
-
-balanceR :: Tree a -> a -> Color -> Tree a -> Tree a
-balanceR a x B (T R b y (T R c z d)) = T R (T B a x b) y (T B c z d)
-balanceR a x B (T R (T R b y c) z d) = T R (T B a x b) y (T B c z d)
-balanceR l x c r = T c l x r
-
-balanceB :: Tree a -> a -> Tree a -> Tree a
-balanceB = T B
 
 -- Convert a list of floats to a Red-Black Tree
 listToRBTree :: [Element] -> RBTree
@@ -220,4 +177,4 @@ main = do
   putStrLn "Deleting all elements from the unioned tree..."
   let deletedTree = foldl' (flip delete) allUnion unionList
   putStrLn "All elements deleted."
-  evaluate (treeSize deletedTree -15) >>= print
+  evaluate (treeSize deletedTree) >>= print
