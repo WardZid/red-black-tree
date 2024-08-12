@@ -265,112 +265,6 @@ class RedBlackTree:
             max_node = max_node.right
         return max_node
 
-    def remove(self, key):
-        node_to_remove = self.search(key)
-
-        if node_to_remove is None or node_to_remove == self.NULL:
-            return False
-
-        if node_to_remove.left == self.NULL:
-            replacement_node = node_to_remove.right
-            self._transplant(node_to_remove, node_to_remove.right)
-        elif node_to_remove.right == self.NULL:
-            replacement_node = node_to_remove.left
-            self._transplant(node_to_remove, node_to_remove.left)
-        else:
-            min_right_node = self._minimum(node_to_remove.right)
-
-            replacement_node = min_right_node.right
-            self._transplant(min_right_node, min_right_node.right)
-            self._transplant(node_to_remove, min_right_node)
-
-            min_right_node.right = node_to_remove.right
-            node_to_remove.right.parent = min_right_node
-
-            min_right_node.left = node_to_remove.left
-            node_to_remove.left.parent = min_right_node
-
-            min_right_node.color = node_to_remove.color
-            min_right_node.black_height = node_to_remove.black_height
-
-        black_depth_violated = (node_to_remove.color == black)
-        if black_depth_violated:
-            node_to_fix = replacement_node
-            while node_to_fix != self.root and node_to_fix.color == black:
-                is_left_child = (node_to_fix == node_to_fix.parent.left)
-                if is_left_child:
-                    sibling = node_to_fix.parent.right
-
-                    if sibling.color == red:
-                        sibling.color = black
-                        node_to_fix.parent.color = red
-
-                        sibling.black_height += 1
-                        node_to_fix.parent -= 1
-
-                        self._left_rotate(node_to_fix.parent)
-                        sibling = node_to_fix.parent.right
-
-                    if sibling.left.color == black and sibling.right.color == black:
-                        sibling.color = red
-                        sibling.black_height -= 1
-                        node_to_fix = node_to_fix.parent
-                    else:
-                        if sibling.right.color == black:
-                            sibling.left.color = black
-                            sibling.color = red
-
-                            sibling.left.black_height += 1
-                            sibling.black_height -= 1
-
-                            self._right_rotate(sibling)
-                            sibling = node_to_fix.parent.right
-
-                        sibling.color = node_to_fix.parent.color
-                        node_to_fix.parent.color = black
-                        sibling.right.color = black
-
-                        node_to_fix.parent.black_height += 1
-                        sibling.right.black_height += 1
-
-                        self._left_rotate(node_to_fix.parent)
-                        node_to_fix = self.root
-                else:
-                    sibling = node_to_fix.parent.left
-
-                    if sibling.color == red:
-                        sibling.color = black
-                        node_to_fix.parent.color = red
-
-                        sibling.black_height += 1
-                        node_to_fix.parent -= 1
-
-                        self._right_rotate(node_to_fix.parent)
-                        sibling = node_to_fix.parent.left
-
-                    if sibling.left.color == black and sibling.right.color == black:
-                        sibling.color = red
-                        sibling.black_height -= 1
-                        node_to_fix = node_to_fix.parent
-                    else:
-                        if sibling.left.color == black:
-                            sibling.right.color = black
-                            sibling.color = red
-
-                            sibling.right.black_height += 1
-                            sibling.black_height -= 1
-
-                            self._left_rotate(sibling)
-                            sibling = node_to_fix.parent.left
-
-                        sibling.color = node_to_fix.parent.color
-                        node_to_fix.parent.color = black
-                        sibling.left.color = black
-                        self._right_rotate(node_to_fix.parent)
-                        node_to_fix = self.root
-            node_to_fix.color = black
-        return True
-
     def delete(self, key):
         left, exists, right = RedBlackTree.split(self.root, key)
         self.root = RedBlackTree.join2(left, right)
@@ -499,6 +393,7 @@ class RedBlackTree:
         right_split, key_split = RedBlackTree.split_last(tree.right)
         return RedBlackTree.join(tree.left, tree. key, right_split), key_split
 
+    #set operations
     @staticmethod
     def union(tree_1, tree_2):
         def union_rec(tree1, tree2):
@@ -650,10 +545,10 @@ def test():
     print("union:*********************************************")
     print(union_tree.values())
     print(len(union_tree.values()))
-    # print("intersection:*********************************************")
-    # print(intersection_tree.inorder())
-    # print("difference: *********************************************")
-    # print(difference_tree.inorder())
+    print("intersection:*********************************************")
+    print(intersection_tree.values())
+    print("difference: *********************************************")
+    print(difference_tree.values())
 
 def print_1000():
     trees = []
