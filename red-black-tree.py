@@ -552,14 +552,14 @@ def test():
 
 def print_1000():
     trees = []
-    with open("data_struct(1000x1000).txt", "r") as file:
-        for line in file:
-            numbers = map(float, line.split(','))
-            tree = RedBlackTree()
-            for number in numbers:
-                tree.insert(number)
-            trees.append(tree)
-            # print(f"tree size: ({len(tree.values())})")
+    file = open("data_struct(1000x1000).txt", "r")
+    for line in file:
+        numbers = map(float, line.split(','))
+        tree = RedBlackTree()
+        for number in numbers:
+            tree.insert(number)
+        trees.append(tree)
+        # print(f"tree size: ({len(tree.values())})")
 
 
     if trees:
@@ -570,6 +570,7 @@ def print_1000():
             # union_tree = RedBlackTree.union(union_tree, trees[i])
             union_tree.union2(trees[i])
             # print(f">AFTER: union tree size: ({len(union_tree.values())})")
+        print("Union finished. Final tree size:")
         print(len(union_tree.values()))
 
         for key in union_tree.values():
@@ -577,5 +578,5 @@ def print_1000():
 
         print("Union tree after deletions:", len(union_tree.values()))
 
-# print_1000()
-test()
+print_1000()
+#test()
